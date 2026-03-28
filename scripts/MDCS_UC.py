@@ -380,7 +380,7 @@ class UserCode:
             Constellation  = jsData['properties']['constellation']
             jsonValList.append(Constellation)
 
-            srs  = jsData['properties']['proj:epsg']
+            srs  = jsData['properties'].get('proj:epsg') or int(jsData['properties'].get('proj:code', '0').replace('EPSG:', ''))
             jsonValList.append(srs)
 
 
@@ -477,7 +477,7 @@ class UserCode:
             Constellation  = jsData.properties['constellation']
             jsonValList.append(Constellation)
 
-            srs  = jsData.properties['proj:epsg']
+            srs  = jsData.properties.get('proj:epsg') or int(jsData.properties.get('proj:code', '0').replace('EPSG:', ''))
             jsonValList.append(srs)
 
 
@@ -555,6 +555,7 @@ class UserCode:
         jsonPath = os.path.join(paramPath,'Json')
         CSVPath = os.path.join(paramPath,'csv')
         file = open(os.path.join(CSVPath, "sample.csv"), 'w+', newline ='')
+        file.close()
 
         # user imported data
         curryear=datetime.now().year
@@ -569,6 +570,12 @@ class UserCode:
         interval = base.getXMLNodeValue(xmlDOM, 'interval')
         cloudePercentage = base.getXMLNodeValue(xmlDOM, 'cloud')
         coordinateInput = base.getXMLNodeValue(xmlDOM, 'coordinate')
+        bestSceneOnly = base.getXMLNodeValue(xmlDOM, 'best_scene_only')
+        bestSceneOnly = (str(bestSceneOnly).strip() == '1')
+        mrfCache = base.getXMLNodeValue(xmlDOM, 'mrf_cache')
+        if mrfCache == '#':
+            mrfCache = 'C:/mrfcache/cachingmrf'
+        mrfCache = mrfCache.rstrip('/') + '/'
         
 
         if coordinateInput == "#":
@@ -687,7 +694,7 @@ class UserCode:
             url = 'https://earth-search.aws.element84.com/v1'
             client = Client.open(url)
             collections='sentinel-2-l2a'
-            query={'eo:cloud_cover': {'lt': float(cloudePercentage)}}
+            query={'eo:cloud_cover': {'lte': float(cloudePercentage)}}
             aoi_as_dict: Dict[str, Any] = {
                         "type": "Polygon",
                         "coordinates": [[
@@ -711,7 +718,33 @@ class UserCode:
                     log.Message(str(exp),2)
                 try:
                     log.Message(("adding to the feature class for interverl "+dateTime+"..."),log.const_general_text)
-                    for item in search.items():
+
+                    if bestSceneOnly:
+                        # Collect all items first, then keep only the best scene per tile
+                        # Tile ID is extracted from the item id: e.g. S2A_38QMG_20250715_0_L2A -> 38QMG
+                        best_per_tile = {}  # tile_id -> (cloud_cover, date, item)
+                        for item in search.items():
+                            try:
+                                parts = item.id.split('_')
+                                tile_id = parts[1] if len(parts) > 1 else item.id
+                                cc = item.properties.get('eo:cloud_cover', 100)
+                                dt = item.properties.get('datetime', '')
+                                if tile_id not in best_per_tile:
+                                    best_per_tile[tile_id] = (cc, dt, item)
+                                else:
+                                    prev_cc, prev_dt, _ = best_per_tile[tile_id]
+                                    # Prefer lower cloud cover; use more recent date as tiebreaker
+                                    if cc < prev_cc or (cc == prev_cc and dt > prev_dt):
+                                        best_per_tile[tile_id] = (cc, dt, item)
+                            except Exception as exp:
+                                log.Message(str(exp), 2)
+
+                        log.Message(("best_scene_only: keeping " + str(len(best_per_tile)) + " scene(s) out of tile coverage"), 0)
+                        items_to_insert = [v[2] for v in best_per_tile.values()]
+                    else:
+                        items_to_insert = list(search.items())
+
+                    for item in items_to_insert:
                         JsonData = self.readStac(data,item)
                         if JsonData != False:
                             try:
@@ -740,8 +773,7 @@ class UserCode:
             masterFC = os.path.join(wrkSpace,"MasterTiles")
             field_list_master=['SHAPE@','AcquisitionDate','CloudCover','Name','ProductID','ProductURL','Constellation','SRS',"NumDate",'Tile_BB_Values','RasterProxy_BB_Values','Q','Best']
 
-            #cache_loc = r"Z:/mrfcache/cachingmrf/"
-            cache_loc = r"C:/mrfcache/cachingmrf/"
+            cache_loc = mrfCache
 
             try:
                 self.findBestTiles(data, masterFC)
@@ -797,6 +829,7 @@ class UserCode:
                             log.Message(str(exp),2)
                 
                 del cursor
+                del sc
                 xmlDOM.getElementsByTagName("data_path")[0].firstChild.data = featureclass
                 arcpy.env.overwriteOutput = False
 
@@ -827,7 +860,8 @@ class UserCode:
 
                     except Exception as exp:
                         log.Message('faield to Update: ' + str(row[0]),1 )
-        except:
+        except Exception as exp:
+            log.Message('markduplicate failed: ' + str(exp), 2)
             return False
 
         return True
