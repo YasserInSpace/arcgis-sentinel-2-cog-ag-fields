@@ -1,0 +1,24 @@
+{
+    "aoi_shapefile": "D:/Yasser/codes/aoi/ksa_agri_fields.shp",
+    "output_folder": "C:/data/sentinel-2-l2a_10m_mosaics",
+    "start_date": "2023-07-01",
+    "end_date": "2025-07-31",
+    "cloud_cover": 5,
+    "area_name": "KSA",
+    "mrf_cache_folder": "C:/mrfcache/cachingmrf",
+    "name_field": "",
+    "best_scene_only": true,
+    "notes": {
+        "aoi_shapefile": "Path to shapefile. If it has multiple features, a separate mosaic will be created for each one.",
+        "output_folder": "Folder where GDB and mosaic datasets will be saved.",
+        "start_date": "Format: YYYY-MM-DD",
+        "end_date": "Format: YYYY-MM-DD",
+        "cloud_cover": "Maximum cloud cover percentage (0-100)",
+        "area_name": "Prefix added to all output mosaic names (e.g. 'KSA' produces KSA_Feature_1, KSA_Field_A). Leave empty for no prefix.",
+        "mrf_cache_folder": "Local folder for MRF tile cache. Must exist and have sufficient disk space.",
+        "name_field": "Optional: field in shapefile to use as mosaic name (e.g. 'FieldName'). Leave empty to use feature index (Feature_1, Feature_2, ...).",
+        "best_scene_only": "If true, keeps only the best scene (lowest cloud cover, most recent tiebreaker) per Sentinel-2 tile. Result is a non-overlapping mosaic of cloudless tiles."
+    }
+}
+
+
