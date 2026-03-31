@@ -724,11 +724,21 @@ class UserCode:
                 try:
                     log.Message(("adding to the feature class for interverl "+dateTime+"..."),log.const_general_text)
 
+                    items_to_insert = list(search.items())
+
+                    # Step 1: apply months filter first
+                    if allowedMonths:
+                        before = len(items_to_insert)
+                        items_to_insert = [
+                            item for item in items_to_insert
+                            if int(item.properties.get('datetime', '')[5:7]) in allowedMonths
+                        ]
+                        log.Message(("months filter: kept " + str(len(items_to_insert)) + " of " + str(before) + " scene(s)"), 0)
+
+                    # Step 2: from remaining scenes pick best per tile
                     if bestSceneOnly:
-                        # Collect all items first, then keep only the best scene per tile
-                        # Tile ID is extracted from the item id: e.g. S2A_38QMG_20250715_0_L2A -> 38QMG
                         best_per_tile = {}  # tile_id -> (cloud_cover, date, item)
-                        for item in search.items():
+                        for item in items_to_insert:
                             try:
                                 parts = item.id.split('_')
                                 tile_id = parts[1] if len(parts) > 1 else item.id
@@ -738,24 +748,12 @@ class UserCode:
                                     best_per_tile[tile_id] = (cc, dt, item)
                                 else:
                                     prev_cc, prev_dt, _ = best_per_tile[tile_id]
-                                    # Prefer lower cloud cover; use more recent date as tiebreaker
                                     if cc < prev_cc or (cc == prev_cc and dt > prev_dt):
                                         best_per_tile[tile_id] = (cc, dt, item)
                             except Exception as exp:
                                 log.Message(str(exp), 2)
-
                         log.Message(("best_scene_only: keeping " + str(len(best_per_tile)) + " scene(s) out of tile coverage"), 0)
                         items_to_insert = [v[2] for v in best_per_tile.values()]
-                    else:
-                        items_to_insert = list(search.items())
-
-                    if allowedMonths:
-                        before = len(items_to_insert)
-                        items_to_insert = [
-                            item for item in items_to_insert
-                            if int(item.properties.get('datetime', '')[5:7]) in allowedMonths
-                        ]
-                        log.Message(("months filter: kept " + str(len(items_to_insert)) + " of " + str(before) + " scene(s)"), 0)
 
                     for item in items_to_insert:
                         JsonData = self.readStac(data,item)
