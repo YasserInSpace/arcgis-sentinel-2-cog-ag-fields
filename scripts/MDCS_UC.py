@@ -576,6 +576,11 @@ class UserCode:
         if mrfCache == '#':
             mrfCache = 'C:/mrfcache/cachingmrf'
         mrfCache = mrfCache.rstrip('/') + '/'
+        monthsInput = base.getXMLNodeValue(xmlDOM, 'months')
+        if monthsInput == '#' or monthsInput.strip() == '':
+            allowedMonths = []
+        else:
+            allowedMonths = [int(m.strip()) for m in monthsInput.split(',') if m.strip().isdigit()]
         
 
         if coordinateInput == "#":
@@ -743,6 +748,14 @@ class UserCode:
                         items_to_insert = [v[2] for v in best_per_tile.values()]
                     else:
                         items_to_insert = list(search.items())
+
+                    if allowedMonths:
+                        before = len(items_to_insert)
+                        items_to_insert = [
+                            item for item in items_to_insert
+                            if int(item.properties.get('datetime', '')[5:7]) in allowedMonths
+                        ]
+                        log.Message(("months filter: kept " + str(len(items_to_insert)) + " of " + str(before) + " scene(s)"), 0)
 
                     for item in items_to_insert:
                         JsonData = self.readStac(data,item)

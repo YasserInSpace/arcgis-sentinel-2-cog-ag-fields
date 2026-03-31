@@ -8,6 +8,7 @@
     "mrf_cache_folder": "C:/mrfcache/cachingmrf",
     "name_field": "",
     "best_scene_only": true,
+    "months": [],
     "notes": {
         "aoi_shapefile": "Path to shapefile. If it has multiple features, a separate mosaic will be created for each one.",
         "output_folder": "Folder where GDB and mosaic datasets will be saved.",
@@ -17,7 +18,8 @@
         "area_name": "Prefix added to all output mosaic names (e.g. 'KSA' produces KSA_Feature_1, KSA_Field_A). Leave empty for no prefix.",
         "mrf_cache_folder": "Local folder for MRF tile cache. Must exist and have sufficient disk space.",
         "name_field": "Optional: field in shapefile to use as mosaic name (e.g. 'FieldName'). Leave empty to use feature index (Feature_1, Feature_2, ...).",
-        "best_scene_only": "If true, keeps only the best scene (lowest cloud cover, most recent tiebreaker) per Sentinel-2 tile. Result is a non-overlapping mosaic of cloudless tiles."
+        "best_scene_only": "If true, keeps only the best scene (lowest cloud cover, most recent tiebreaker) per Sentinel-2 tile. Result is a non-overlapping mosaic of cloudless tiles.",
+        "months": "Optional: list of month numbers to include (e.g. [6,7,8] for June-August only). Leave empty [] to include all months in the date range."
     }
 }
 

@@ -67,7 +67,7 @@ def safe_mosaic_name(base_name):
     return name
 
 
-def run_mdcs(python_exe, mdcs_script, config_xml, mosaic_path, bbox, start_date, end_date, cloud_cover, best_scene_only=False, mrf_cache='C:/mrfcache/cachingmrf'):
+def run_mdcs(python_exe, mdcs_script, config_xml, mosaic_path, bbox, start_date, end_date, cloud_cover, best_scene_only=False, mrf_cache='C:/mrfcache/cachingmrf', months=None):
     cmd = [
         python_exe,
         mdcs_script,
@@ -80,7 +80,8 @@ def run_mdcs(python_exe, mdcs_script, config_xml, mosaic_path, bbox, start_date,
         f'-p:{bbox}$coordinate',
         '-p:1$interval',
         f'-p:{"1" if best_scene_only else "0"}$best_scene_only',
-        f'-p:{mrf_cache}$mrf_cache'
+        f'-p:{mrf_cache}$mrf_cache',
+        f'-p:{",".join(str(m) for m in months) if months else "#"}$months'
     ]
 
     print(f"\n{'='*60}")
@@ -113,6 +114,7 @@ def main():
     name_field      = config.get('name_field', '').strip()
     best_scene_only = config.get('best_scene_only', False)
     mrf_cache       = config.get('mrf_cache_folder', 'C:/mrfcache/cachingmrf').strip().replace('\\', '/')
+    months          = config.get('months', [])
 
     python_exe  = sys.executable
     mdcs_script = os.path.join(script_dir, 'MDCS.py')
@@ -175,7 +177,7 @@ def main():
             print(f"WARNING: GDB already exists, it will be overwritten: {gdb_path}")
 
         ok = run_mdcs(python_exe, mdcs_script, config_xml,
-                      mosaic_path, bbox, start_date, end_date, cloud_cover, best_scene_only, mrf_cache)
+                      mosaic_path, bbox, start_date, end_date, cloud_cover, best_scene_only, mrf_cache, months)
 
         if ok:
             print(f"[OK] {mosaic_name} -> {mosaic_path}")

@@ -41,6 +41,7 @@ All settings are managed through `config.json`:
 | `end_date` | End of Sentinel-2 search range (`YYYY-MM-DD`) |
 | `cloud_cover` | Maximum cloud cover percentage (0–100) |
 | `best_scene_only` | If `true`, keeps only the best scene per Sentinel-2 tile (lowest cloud cover, non-overlapping) |
+| `months` | Optional: list of months to include e.g. `[6,7,8]` for June–August only. Leave empty `[]` for all months. |
 | `output_folder` | Folder where GDB and mosaic datasets are saved |
 | `mrf_cache_folder` | Local folder for MRF tile cache |
 

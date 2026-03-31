@@ -11,6 +11,7 @@
 			<CSV_path>#;$CSV_path$</CSV_path>
 			<best_scene_only>0;$best_scene_only$</best_scene_only>
 			<mrf_cache>C:/mrfcache/cachingmrf;$mrf_cache$</mrf_cache>
+			<months>#;$months$</months>
 	</customcommand>
 	<SetProperty>
 			<sp_inputjson>#;$sp_inputjson$</sp_inputjson>
