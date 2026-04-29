@@ -164,25 +164,7 @@
 										<Value/>
 										<IsDataset>true</IsDataset>
 									</Argument>
-									<Argument xsi:type='typens:RasterFunctionVariable'>
-										<Name>AOT</Name>
-										<Description/>
-										<Value/>
-										<IsDataset>true</IsDataset>
-									</Argument>
-									<Argument xsi:type='typens:RasterFunctionVariable'>
-										<Name>WVP</Name>
-										<Description/>
-										<Value/>
-										<IsDataset>true</IsDataset>
-									</Argument>
-									<Argument xsi:type='typens:RasterFunctionVariable'>
-										<Name>SCL</Name>
-										<Description/>
-										<Value/>
-										<IsDataset>true</IsDataset>
-									</Argument>
-								</Value>
+												</Value>
 								<Aliases xsi:type='typens:ArrayOfString'>
 									<String>__IsRasterArray__</String>
 								</Aliases>

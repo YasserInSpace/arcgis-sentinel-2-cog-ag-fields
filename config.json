@@ -1,8 +1,8 @@
 {
-    "aoi_shapefile": "D:/Yasser/codes/aoi/ksa_agri_fields.shp",
-    "output_folder": "C:/data/sentinel-2-l2a_10m_mosaics",
-    "start_date": "2023-07-01",
-    "end_date": "2025-07-31",
+    "aoi_shapefile": "D:/Yasser/codes/arcgis-sentinel-2-cog-ag-fields/aoi/ksa_agri_fields.shp",
+    "output_folder": "C:/data/sentinel-2-l2a_10m_mosaics1",
+    "start_date": "2024-11-01",
+    "end_date": "2025-12-30",
     "cloud_cover": 5,
     "area_name": "KSA",
     "mrf_cache_folder": "C:/mrfcache/cachingmrf",
