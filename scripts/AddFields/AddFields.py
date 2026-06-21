@@ -50,11 +50,16 @@ class AddFields(Base.Base):
             self.log("\tCreating fields:", self.const_general_text)
             for j in range(len(self.fieldNameList)):
                 self.log("\t\t" + self.fieldNameList[j], self.const_general_text)
-                fieldExist = arcpy.ListFields(mdPath, self.fieldNameList[j])
-                if len(fieldExist) == 0:
-                    arcpy.AddField_management(mdPath, self.fieldNameList[j], self.fieldTypeList[j], "", "", self.fieldLengthList[j])
-        except:
-            self.log("Error: " + arcpy.GetMessages(), self.const_critical_text)
+                if not arcpy.ListFields(mdPath, self.fieldNameList[j]):
+                    kwargs = {'field_type': self.fieldTypeList[j]}
+                    if self.fieldLengthList[j]:
+                        kwargs['field_length'] = self.fieldLengthList[j]
+                    arcpy.management.AddField(mdPath, self.fieldNameList[j], **kwargs)
+        except arcpy.ExecuteError:
+            self.log("Error: " + arcpy.GetMessages(2), self.const_critical_text)
+            return False
+        except Exception as e:
+            self.log("Error: " + str(e), self.const_critical_text)
             return False
 
         return True

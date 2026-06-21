@@ -2,7 +2,7 @@
 
 This repository automates creation of Sentinel-2 L2A Mosaic Datasets from Cloud-Optimized GeoTIFFs (COGs) hosted on AWS Open Data Registry: <https://registry.opendata.aws/sentinel-2-l2a-cogs/>
 
-Each mosaic includes all 15 Sentinel-2 L2A bands along with 24 pre-configured processing templates for rendering imagery composites and spectral indices on-the-fly in ArcGIS Pro (Agriculture, NDVI, NDWI, NDMI, Color Infrared, etc.).
+Each mosaic includes 12 Sentinel-2 L2A spectral bands along with 24 pre-configured processing templates for rendering imagery composites and spectral indices on-the-fly in ArcGIS Pro (Agriculture, NDVI, NDWI, NDMI, Color Infrared, etc.).
 
 ---
 
@@ -24,6 +24,7 @@ The batch file will automatically:
 - Validate ArcGIS Pro Python installation
 - Create required folders (`output_folder`, `mrf_cache_folder`)
 - Install `pystac-client` if not present
+- Run pre-flight checks (license, shapefile path, existing GDB overwrite warning)
 - Run the workflow for each feature in your shapefile
 
 ---
@@ -87,6 +88,7 @@ The mosaic stores **no raster pixels locally** — imagery is streamed on-demand
 │   └── Rastertype/                    # Sentinel-2 raster type definition
 ├── scripts/
 │   ├── run_from_shapefile.py          # Shapefile AOI workflow runner
+│   ├── preflight_check.py             # Pre-flight validation (license, paths, overwrites)
 │   ├── MDCS_UC.py                     # Custom MDCS user commands
 │   ├── MDCS.py                        # MDCS main entry point
 │   └── ...                            # Supporting scripts

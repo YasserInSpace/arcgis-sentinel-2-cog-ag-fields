@@ -43,17 +43,17 @@ class AddRasters(Base.Base):
         return True
 
     def getLastObjectID(self, gdb, md):
-
         path = os.path.join(gdb, md)
-        rows = arcpy.SearchCursor(path, "objectid = (SELECT MAX(\"objectid\") FROM %sAMD_%s_CAT)" % (self.m_base.m_SDE_database_user, md), None, 'objectid')
-        if (rows is None):
-            return 0  # new table
-
-        objID = 0
-        for row in rows:
-            objID = row.objectid
-            break
-        return objID
+        where = "objectid = (SELECT MAX(\"objectid\") FROM %sAMD_%s_CAT)" % (self.m_base.m_SDE_database_user, md)
+        try:
+            with arcpy.da.SearchCursor(path, ['objectid'], where_clause=where) as cursor:
+                for row in cursor:
+                    return row[0]
+        except arcpy.ExecuteError:
+            pass
+        except Exception:
+            pass
+        return 0
 
     def GetValue(self, dic_values, key):
         try:
@@ -144,10 +144,11 @@ class AddRasters(Base.Base):
                     for callback_fn in self.callback_functions:
                         if (callback_fn(self.m_base.m_geoPath, sourceID, self.sMdNameList[sourceID]) == False):
                             return False
+                except arcpy.ExecuteError:
+                    self.log(arcpy.GetMessages(2), self.const_warning_text)
                 except Exception as e:
                     self.log(str(e), self.const_warning_text)
                     self.log(arcpy.GetMessages(), self.const_warning_text)
-                    Warning = True
             newObjID = self.getLastObjectID(self.m_base.m_geoPath, MDName)
             if (newObjID <= self.m_base.m_last_AT_ObjectID):
                 self.log('No new mosaic dataset items added to dataset (%s). Verify the input data path/raster type is correct' % (MDName), self.const_critical_text)

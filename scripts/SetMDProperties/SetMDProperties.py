@@ -393,8 +393,7 @@ class SetMDProperties(Base.Base):
                     self.comparePropertyByMosiac(mdPath,sp_mosaic,sp_outputjson)
 
             else:
-                log.Message("SP flag is not found!",self.const_critical_text)
-                log.Message("Using default for Set property",self.const_critical_text)
+                log.Message("SP flag not set, applying default properties", self.const_general_text)
                 self.setProperty(mdPath)
 
             return True

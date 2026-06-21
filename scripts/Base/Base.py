@@ -78,13 +78,17 @@ class DynaInvoke:
             self._message(str(exp), self.const_critical_text)
             return False
         len_args = len(self.m_args)
-        if (len_args < arg_count):
-##            self._message('Args less than required, filling with default (#)', self.const_warning_text)
-            for i in range(len_args, arg_count):
-                self.m_args.append('#')
-        elif (len_args > arg_count):
-##            self._message('More args supplied than required to function (%s)' % (self.m_name), self.const_warning_text)
-            self.m_args = self.m_args[:arg_count]
+        # arcpy GP tools in newer ArcGIS Pro are (*args, **kwargs) wrappers whose
+        # __code__.co_argcount is 0; only adjust args when the count is meaningful,
+        # otherwise we'd truncate every argument to an empty list.
+        if (arg_count > 0):
+            if (len_args < arg_count):
+##                self._message('Args less than required, filling with default (#)', self.const_warning_text)
+                for i in range(len_args, arg_count):
+                    self.m_args.append('#')
+            elif (len_args > arg_count):
+##                self._message('More args supplied than required to function (%s)' % (self.m_name), self.const_warning_text)
+                self.m_args = self.m_args[:arg_count]
         return True
 
     def invoke(self):   # chs

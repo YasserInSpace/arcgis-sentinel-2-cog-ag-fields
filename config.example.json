@@ -1,0 +1,29 @@
+{
+    "aoi_shapefile": "C:/data/my_fields/fields.shp",
+    "output_folder": "C:/data/sentinel-2-mosaics",
+    "start_date": "2024-06-01",
+    "end_date": "2024-09-30",
+    "cloud_cover": 10,
+    "area_name": "MyArea",
+    "mrf_cache_folder": "C:/mrfcache/cachingmrf",
+    "name_field": "",
+    "best_scene_only": true,
+    "months": [],
+
+    "_INSTRUCTIONS": [
+        "Copy this file to config.json (in the same folder) and fill in your values.",
+        "Do NOT rename this file — the tool reads config.json, not config.example.json."
+    ],
+    "notes": {
+        "aoi_shapefile": "Full path to your shapefile (.shp). Use forward slashes (C:/...). If the shapefile has multiple features (polygons), a separate mosaic is created for each one.",
+        "output_folder": "Folder where results (GDB files) will be saved. It will be created automatically if it does not exist. Use a local drive with enough free space.",
+        "start_date": "Start of the date range to search for Sentinel-2 scenes. Format: YYYY-MM-DD",
+        "end_date": "End of the date range. Format: YYYY-MM-DD",
+        "cloud_cover": "Maximum cloud cover percentage to accept (0 = clear sky only, 100 = any). Recommended: 5-15.",
+        "area_name": "Optional prefix added to all output mosaic names. E.g. 'KSA' produces KSA_Feature_1, KSA_Field_A. Leave empty string for no prefix.",
+        "mrf_cache_folder": "Local folder used as a tile cache. Leave as default unless you need to change the drive. Must have several GB of free space.",
+        "name_field": "Optional: a field in your shapefile to use as the mosaic name (e.g. 'FieldName'). Leave as empty string to auto-name as Feature_1, Feature_2, ...",
+        "best_scene_only": "true = keep only the single best (lowest cloud cover) Sentinel-2 tile per location, giving a clean non-overlapping mosaic. false = keep all scenes in the date range.",
+        "months": "Optional: restrict scenes to specific months. E.g. [6,7,8] for June, July, August only. Leave as [] to include all months in the date range."
+    }
+}

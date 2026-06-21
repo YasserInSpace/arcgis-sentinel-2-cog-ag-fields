@@ -93,7 +93,7 @@ def main(argc, argv):
         # -l:Full path to log file (including file name)
         user_args = \
             [
-                "-m: Mosaic dataset path including GDB and MD name [e.g. c:\WorldElevation.gdb\Portland]",
+                r"-m: Mosaic dataset path including GDB and MD name [e.g. c:\WorldElevation.gdb\Portland]",
                 "-s: Source data paths. (As inputs to command (AR). -s: can be repeated to add multiple paths",
                 "-l: Log file output path [path+file name]",
                 "-artdem: Update DEM path in ART file"
