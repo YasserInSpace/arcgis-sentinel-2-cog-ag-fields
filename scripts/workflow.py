@@ -42,6 +42,10 @@ class Reporter(object):
     def error(self, text):
         print('  ERROR: %s' % text)
 
+    def detail(self, text):
+        """Verbose per-line output from the MDCS subprocess."""
+        print(text)
+
     def progress(self, done, total, label):
         pass
 
@@ -98,8 +102,21 @@ def count_mosaic_items(mosaic_path):
         return -1
 
 
+def _no_window_flags():
+    """Keep the MDCS subprocess from opening its own console window.
+
+    A GUI host such as ArcGIS Pro has no console, so Windows would allocate a
+    new one per feature and MDCS output would vanish with it.
+    """
+    if os.name != 'nt':
+        return {}
+    return {'creationflags': getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)}
+
+
 def _run_mdcs(config_xml, mosaic_path, feature, geojson_path, start_date,
-              end_date, cloud_cover, scene_selection, mrf_cache, months):
+              end_date, cloud_cover, scene_selection, mrf_cache, months,
+              reporter=None):
+    reporter = reporter or Reporter()
     command = [
         python_executable(),
         os.path.join(SCRIPT_DIR, 'MDCS.py'),
@@ -116,7 +133,21 @@ def _run_mdcs(config_xml, mosaic_path, feature, geojson_path, start_date,
         '-p:%s$mrf_cache' % mrf_cache,
         '-p:%s$months' % (','.join(str(m) for m in months) if months else '#'),
     ]
-    return subprocess.run(command, capture_output=False, text=True).returncode == 0
+
+    # Stream the output through the reporter rather than letting it go to a
+    # console, so it reaches whichever surface is driving the run.
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, bufsize=1, encoding='utf-8', errors='replace',
+        **_no_window_flags())
+
+    with process.stdout as stream:
+        for line in stream:
+            line = line.rstrip()
+            if line:
+                reporter.detail(line)
+
+    return process.wait() == 0
 
 
 def build_mosaics(config, reporter=None):
@@ -198,7 +229,8 @@ def build_mosaics(config, reporter=None):
 
             started = _run_mdcs(run_xml, mosaic_path, feature,
                                 geojson_path.replace('\\', '/'), start_date, end_date,
-                                cloud_cover, scene_selection, mrf_cache, months)
+                                cloud_cover, scene_selection, mrf_cache, months,
+                                reporter)
 
             item_count = count_mosaic_items(mosaic_path)
             if not started:

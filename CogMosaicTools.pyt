@@ -40,6 +40,16 @@ class _GpReporter(workflow.Reporter):
     def error(self, text):
         arcpy.AddError(text)
 
+    def detail(self, text):
+        # MDCS prefixes its output; drop the prefix so the messages pane reads
+        # cleanly, but keep the lines - they are what makes a failure diagnosable.
+        for prefix in ('log-msg:', 'log-status:', 'log-error:'):
+            if text.startswith(prefix):
+                text = text[len(prefix):].strip()
+                break
+        if text:
+            arcpy.AddMessage('    %s' % text)
+
     def progress(self, done, total, label):
         if total:
             arcpy.SetProgressorPosition(done)

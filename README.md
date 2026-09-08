@@ -37,7 +37,11 @@ Add `CogMosaicTools.pyt` to the Catalog pane and open **Build Mosaics from AOI**
 The AOI can be any layer already in your map — including one with a selection,
 so you can process just the features you have selected — and dates come from a
 date picker rather than typed strings. Finished mosaics are returned as tool
-output, ready to add to the map.
+output, ready to add to the map, and MDCS output appears in the geoprocessing
+messages rather than a console window.
+
+The toolbox takes a feature layer or feature class, so the bare bounding-box
+string form of `aoi` is available from the command line only.
 
 ### From the command line
 
