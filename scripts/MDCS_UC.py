@@ -268,7 +268,7 @@ class UserCode:
 
     def findBestTiles(self, data, input_fc):
         log = data['log']
-        SENTINEL2_TILE_AREA_KM2 = 12115.0  # reference full-tile area in km²
+        REFERENCE_TILE_AREA_KM2 = 12115.0  # full Sentinel-2 tile area in km2
         fields = ['AcquisitionDate', 'CloudCover', 'Q', 'Shape_Area', 'Best']
         log.Message("Calculating the Q and Best value...", 0)
         try:
@@ -282,7 +282,7 @@ class UserCode:
                     date_diff = datetime(year, month, day) - datetime(1899, 12, 31)
                     date_float = float(date_diff.days) + (float(date_diff.seconds) / 86400)
                     area_km2 = row[3] / 1_000_000
-                    area_ratio = area_km2 / SENTINEL2_TILE_AREA_KM2
+                    area_ratio = area_km2 / REFERENCE_TILE_AREA_KM2
                     if 0.2 < area_ratio <= 1.0:
                         area_penalty = -(60 - area_ratio * 60)
                     elif area_ratio <= 0.2:
@@ -515,7 +515,77 @@ class UserCode:
             return False
 
 
-    def sentinelModifySrc(self, data):
+    def tileKey(self, item):
+        """Stable per-tile identifier for a STAC item.
+
+        grid:code carries the sensor's own tiling scheme (MGRS-38QNM for
+        Sentinel-2, WRS2-165044 for Landsat), so it works across products.
+        Older items without it fall back to the id, which for Sentinel-2 puts
+        the tile in the second underscore-separated field.
+        """
+        grid_code = item.properties.get('grid:code')
+        if grid_code:
+            return str(grid_code)
+        parts = item.id.split('_')
+        return parts[1] if len(parts) > 1 else item.id
+
+    def selectScenes(self, data, items, mode):
+        """Reduce a scene list according to the configured selection mode.
+
+        all           - keep every scene in range
+        best_scene_only - the best available scene for each tile, ranked purely on
+                        cloud cover regardless of when it was captured, so the
+                        mosaic is built from the clearest imagery in the whole
+                        date range. Date is only a tiebreak between scenes of
+                        equal cloud cover, where the more recent one wins
+        date_coherent - keep a single acquisition day, chosen for widest tile
+                        coverage; for change detection and any other question
+                        where one mosaic must represent one moment
+        """
+        log = data['log']
+        if mode == 'all' or not items:
+            log.Message('scene_selection=all: keeping %d scene(s)' % len(items), 0)
+            return items
+
+        if mode == 'date_coherent':
+            by_day = {}
+            for item in items:
+                day = str(item.properties.get('datetime', ''))[:10]
+                by_day.setdefault(day, []).append(item)
+
+            def day_rank(entry):
+                day, day_items = entry
+                tiles = {self.tileKey(i) for i in day_items}
+                clouds = [i.properties.get('eo:cloud_cover', 100) for i in day_items]
+                mean_cloud = sum(clouds) / float(len(clouds)) if clouds else 100
+                # Widest coverage first, then clearest, then most recent.
+                return (-len(tiles), mean_cloud, day)
+
+            best_day, day_items = sorted(by_day.items(), key=day_rank)[0]
+            log.Message('scene_selection=date_coherent: chose %s from %d candidate day(s)'
+                        % (best_day, len(by_day)), 0)
+            items = day_items
+
+        best_scene_only = {}
+        for item in items:
+            try:
+                tile_id = self.tileKey(item)
+                cc = item.properties.get('eo:cloud_cover', 100)
+                dt = item.properties.get('datetime', '')
+                if tile_id not in best_scene_only:
+                    best_scene_only[tile_id] = (cc, dt, item)
+                else:
+                    prev_cc, prev_dt, _ = best_scene_only[tile_id]
+                    if cc < prev_cc or (cc == prev_cc and dt > prev_dt):
+                        best_scene_only[tile_id] = (cc, dt, item)
+            except Exception as exp:
+                log.Message(str(exp), 2)
+
+        log.Message('scene_selection=%s: keeping %d scene(s) across %d tile(s)'
+                    % (mode, len(best_scene_only), len(best_scene_only)), 0)
+        return [value[2] for value in best_scene_only.values()]
+
+    def stacBuildSource(self, data):
         log = data['log']
         base = data['base']         # using Base class for its XML specific common functions. (getXMLXPathValue, getXMLNodeValue, getXMLNode)
         xmlDOM = data['mdcs']
@@ -543,6 +613,29 @@ class UserCode:
         coordinateInput = base.getXMLNodeValue(xmlDOM, 'coordinate')
         bestSceneOnly = base.getXMLNodeValue(xmlDOM, 'best_scene_only')
         bestSceneOnly = (str(bestSceneOnly).strip() == '1')
+
+        # scene_selection supersedes the older best_scene_only 0/1 parameter,
+        # which is still read so direct MDCS invocations keep working.
+        # 'best_scene_only' is now one of the scene_selection modes.
+        sceneSelection = str(base.getXMLNodeValue(xmlDOM, 'scene_selection') or '').strip().lower()
+        if sceneSelection in ('', '#'):
+            sceneSelection = 'best_scene_only' if bestSceneOnly else 'all'
+        if sceneSelection not in ('all', 'best_scene_only', 'date_coherent'):
+            log.Message("Unknown scene_selection '%s'; using 'all'." % sceneSelection, 1)
+            sceneSelection = 'all'
+
+        # The AOI geometry is passed as a file because a full polygon does not
+        # survive the command line reliably. Falls back to the bbox rectangle.
+        aoiGeometry = None
+        aoiGeoJsonPath = base.getXMLNodeValue(xmlDOM, 'aoi_geojson')
+        if aoiGeoJsonPath and aoiGeoJsonPath != '#':
+            try:
+                with open(aoiGeoJsonPath, 'r', encoding='utf-8') as aoiHandle:
+                    aoiGeometry = json.load(aoiHandle)
+            except Exception as exp:
+                log.Message('Unable to read aoi_geojson (%s): %s' % (aoiGeoJsonPath, exp), 2)
+                aoiGeometry = None
+
         mrfCache = base.getXMLNodeValue(xmlDOM, 'mrf_cache')
         if mrfCache == '#':
             mrfCache = 'C:/mrfcache/cachingmrf'
@@ -663,16 +756,24 @@ class UserCode:
                 client = Client.open(url)
                 collections = 'sentinel-2-l2a'
                 query = {'eo:cloud_cover': {'lte': float(cloudePercentage)}}
-                aoi_as_dict: Dict[str, Any] = {
-                    "type": "Polygon",
-                    "coordinates": [[
-                        [coordinateList[0], coordinateList[1]],
-                        [coordinateList[2], coordinateList[1]],
-                        [coordinateList[2], coordinateList[3]],
-                        [coordinateList[0], coordinateList[3]],
-                        [coordinateList[0], coordinateList[1]]
-                    ]]
-                }
+                # Searching by the true AOI outline rather than its bounding box
+                # avoids pulling in scenes that only touch the box corners, which
+                # matters most for corridor- and coastline-shaped AOIs.
+                if aoiGeometry is not None:
+                    aoi_as_dict: Dict[str, Any] = aoiGeometry
+                    log.Message('Searching by AOI geometry (%s).' % aoiGeometry.get('type'), 0)
+                else:
+                    aoi_as_dict: Dict[str, Any] = {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [coordinateList[0], coordinateList[1]],
+                            [coordinateList[2], coordinateList[1]],
+                            [coordinateList[2], coordinateList[3]],
+                            [coordinateList[0], coordinateList[3]],
+                            [coordinateList[0], coordinateList[1]]
+                        ]]
+                    }
+                    log.Message('Searching by AOI bounding box.', 0)
                 for dateTime in datelist:
                     try:
                         search = client.search(
@@ -697,25 +798,8 @@ class UserCode:
                             ]
                             log.Message("months filter: kept " + str(len(items_to_insert)) + " of " + str(before) + " scene(s)", 0)
 
-                        # Step 2: from remaining scenes pick best per tile
-                        if bestSceneOnly:
-                            best_per_tile = {}
-                            for item in items_to_insert:
-                                try:
-                                    parts = item.id.split('_')
-                                    tile_id = parts[1] if len(parts) > 1 else item.id
-                                    cc = item.properties.get('eo:cloud_cover', 100)
-                                    dt = item.properties.get('datetime', '')
-                                    if tile_id not in best_per_tile:
-                                        best_per_tile[tile_id] = (cc, dt, item)
-                                    else:
-                                        prev_cc, prev_dt, _ = best_per_tile[tile_id]
-                                        if cc < prev_cc or (cc == prev_cc and dt > prev_dt):
-                                            best_per_tile[tile_id] = (cc, dt, item)
-                                except Exception as exp:
-                                    log.Message(str(exp), 2)
-                            log.Message("best_scene_only: keeping " + str(len(best_per_tile)) + " scene(s) out of tile coverage", 0)
-                            items_to_insert = [v[2] for v in best_per_tile.values()]
+                        # Step 2: apply the scene selection mode
+                        items_to_insert = self.selectScenes(data, items_to_insert, sceneSelection)
 
                         for item in items_to_insert:
                             JsonData = self.readStac(data, item)
