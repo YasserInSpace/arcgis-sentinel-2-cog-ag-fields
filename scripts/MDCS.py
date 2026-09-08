@@ -223,5 +223,27 @@ def main(argc, argv):
     return results
 
 
+def run_failed(results):
+    """Decide whether an MDCS run failed, for the process exit code.
+
+    main() returns the per-command result list from solutionsLib.run (or False
+    when it could not start). Only an explicit False — or a response dict whose
+    'status' is explicitly false — counts as a failure, so commands that return
+    something else are not misreported.
+    """
+    if results is False or results is None or not results:
+        return True
+    for entry in results:
+        value = entry.get('value') if isinstance(entry, dict) else entry
+        if value is False:
+            return True
+        if isinstance(value, dict) and 'status' in value:
+            if str(value['status']).strip().lower() in ('false', '0', 'no'):
+                return True
+    return False
+
+
 if __name__ == '__main__':
-    main(len(sys.argv), sys.argv)
+    # Without this the process always exited 0, so callers reported success even
+    # when the mosaic was never built.
+    sys.exit(1 if run_failed(main(len(sys.argv), sys.argv)) else 0)
