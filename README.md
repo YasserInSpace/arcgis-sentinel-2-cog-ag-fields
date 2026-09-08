@@ -40,8 +40,8 @@ date picker rather than typed strings. Finished mosaics are returned as tool
 output, ready to add to the map, and MDCS output appears in the geoprocessing
 messages rather than a console window.
 
-The toolbox takes a feature layer or feature class, so the bare bounding-box
-string form of `aoi` is available from the command line only.
+The toolbox accepts every AOI form the command line does — a layer, a feature
+class, a GeoJSON file, or a bounding box typed straight into the box.
 
 ### From the command line
 

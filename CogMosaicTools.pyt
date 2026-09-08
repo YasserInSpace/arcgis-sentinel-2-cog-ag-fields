@@ -18,6 +18,7 @@ if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
 
 import workflow
+import aoi_source
 import templates as template_packs
 
 
@@ -67,12 +68,19 @@ class BuildMosaics(object):
         self.canRunInBackground = False
 
     def getParameterInfo(self):
+        # Every input form the pipeline supports, so the toolbox is not the
+        # weaker entry point: a layer from the map, a feature class, a GeoJSON
+        # file, or a "minx,miny,maxx,maxy" bounding box typed in directly.
         aoi = arcpy.Parameter(
             displayName='Area of interest',
-            name='aoi', datatype=['GPFeatureLayer', 'DEFeatureClass'],
+            name='aoi',
+            datatype=['GPFeatureLayer', 'DEFeatureClass', 'DEFile', 'GPString'],
             parameterType='Required', direction='Input')
-        aoi.description = ('Any geometry type. Points and lines are buffered into '
-                           'search areas automatically. One mosaic per feature.')
+        aoi.description = (
+            'A layer or feature class, a GeoJSON file, or a bounding box written '
+            'as minx,miny,maxx,maxy in WGS84. Any geometry type; points and lines '
+            'are buffered into search areas automatically. One mosaic per feature, '
+            'and a layer with a selection processes only the selected features.')
 
         output_folder = arcpy.Parameter(
             displayName='Output folder',
@@ -160,6 +168,20 @@ class BuildMosaics(object):
         return
 
     def updateMessages(self, parameters):
+        # Allowing a plain string as an AOI means the datatype no longer rejects
+        # nonsense, so the value is checked here instead.
+        aoi = parameters[0]
+        if aoi.value:
+            text = aoi.valueAsText
+            recognised = (aoi_source.parse_bbox(text) is not None
+                          or arcpy.Exists(text)
+                          or os.path.exists(text))
+            if not recognised:
+                aoi.setErrorMessage(
+                    'Not a layer, feature class, GeoJSON file, or bounding box. '
+                    'For a bounding box use minx,miny,maxx,maxy in WGS84, '
+                    'for example 44.0,22.0,48.0,26.0')
+
         start, end = parameters[2], parameters[3]
         if start.value and end.value and start.value > end.value:
             end.setErrorMessage('End date must fall on or after the start date.')

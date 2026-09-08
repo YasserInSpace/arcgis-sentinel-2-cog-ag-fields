@@ -224,8 +224,13 @@ def _bbox_to_geojson(minx, miny, maxx, maxy):
     }
 
 
-def _from_bbox_string(text):
-    match = _BBOX_RE.match(text)
+def parse_bbox(text):
+    """Parse "minx,miny,maxx,maxy" into ordered floats, or None if it is not one.
+
+    Callers use this to tell a bounding box apart from a dataset path before
+    deciding how to read the AOI.
+    """
+    match = _BBOX_RE.match(str(text or ''))
     if not match:
         return None
     minx, miny, maxx, maxy = (float(v) for v in match.groups())
@@ -233,7 +238,14 @@ def _from_bbox_string(text):
         minx, maxx = maxx, minx
     if miny > maxy:
         miny, maxy = maxy, miny
-    geojson = _bbox_to_geojson(minx, miny, maxx, maxy)
+    return [minx, miny, maxx, maxy]
+
+
+def _from_bbox_string(text):
+    bounds = parse_bbox(text)
+    if bounds is None:
+        return None
+    geojson = _bbox_to_geojson(*bounds)
     return [AoiFeature('AOI', geojson, geojson_bbox(geojson))]
 
 
