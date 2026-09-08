@@ -1,13 +1,15 @@
 {
-    "aoi_shapefile": "C:/data/my_fields/fields.shp",
-    "output_folder": "C:/data/sentinel-2-mosaics",
+    "aoi": "C:/data/my_aoi/areas.shp",
+    "output_folder": "C:/data/mosaics",
     "start_date": "2024-06-01",
     "end_date": "2024-09-30",
     "cloud_cover": 10,
     "area_name": "MyArea",
     "mrf_cache_folder": "C:/mrfcache/cachingmrf",
     "name_field": "",
-    "best_scene_only": true,
+    "aoi_buffer_meters": 0,
+    "scene_selection": "best_scene_only",
+    "template_packs": ["all"],
     "months": [],
 
     "_INSTRUCTIONS": [
@@ -15,15 +17,17 @@
         "Do NOT rename this file — the tool reads config.json, not config.example.json."
     ],
     "notes": {
-        "aoi_shapefile": "Full path to your shapefile (.shp). Use forward slashes (C:/...). If the shapefile has multiple features (polygons), a separate mosaic is created for each one.",
-        "output_folder": "Folder where results (GDB files) will be saved. It will be created automatically if it does not exist. Use a local drive with enough free space.",
-        "start_date": "Start of the date range to search for Sentinel-2 scenes. Format: YYYY-MM-DD",
+        "aoi": "The area of interest. Accepts a shapefile, a GeoJSON file, a feature class in a geodatabase, or a plain bounding box string like '44.0,22.0,48.0,26.0' (minx,miny,maxx,maxy in WGS84). Points and lines are accepted and are buffered into search areas automatically. Use forward slashes (C:/...). Each feature produces its own mosaic.",
+        "output_folder": "Folder where results (GDB files) will be saved. Created automatically if it does not exist. Use a local drive with enough free space.",
+        "start_date": "Start of the date range to search for scenes. Format: YYYY-MM-DD",
         "end_date": "End of the date range. Format: YYYY-MM-DD",
-        "cloud_cover": "Maximum cloud cover percentage to accept (0 = clear sky only, 100 = any). Recommended: 5-15.",
-        "area_name": "Optional prefix added to all output mosaic names. E.g. 'KSA' produces KSA_Feature_1, KSA_Field_A. Leave empty string for no prefix.",
-        "mrf_cache_folder": "Local folder used as a tile cache. Leave as default unless you need to change the drive. Must have several GB of free space.",
-        "name_field": "Optional: a field in your shapefile to use as the mosaic name (e.g. 'FieldName'). Leave as empty string to auto-name as Feature_1, Feature_2, ...",
-        "best_scene_only": "true = keep only the single best (lowest cloud cover) Sentinel-2 tile per location, giving a clean non-overlapping mosaic. false = keep all scenes in the date range.",
+        "cloud_cover": "Maximum scene cloud cover percentage to accept (0 = clear sky only, 100 = any). Recommended: 5-15. Note this is measured over the whole satellite tile, not just your AOI.",
+        "area_name": "Optional prefix added to all output mosaic names. E.g. 'KSA' produces KSA_Feature_1, KSA_Basin_A. Leave empty for no prefix.",
+        "mrf_cache_folder": "Local folder used as a tile cache. Leave as default unless you need a different drive. Must have several GB of free space.",
+        "name_field": "Optional: a field in your AOI whose value names each mosaic (e.g. 'name'). Leave empty to auto-name as Feature_1, Feature_2, ...",
+        "aoi_buffer_meters": "Optional: expand every AOI by this many metres before searching. Points and lines always get at least a 100 m buffer since they have no area of their own.",
+        "scene_selection": "How scenes are chosen. 'all' keeps every scene in range. 'best_scene_only' keeps the best scene for each tile ranked purely on cloud cover, whatever its date, so the mosaic is built from the clearest imagery found anywhere in the date range; date only breaks ties between equally clear scenes. 'date_coherent' instead keeps a single acquisition day (the one covering the most tiles), for change detection or any question where one mosaic must represent one moment.",
+        "template_packs": "Which raster function templates to attach to the mosaic. Use ['all'] for everything, or pick from: imagery, vegetation, water, fire, urban, geology, snow. E.g. ['imagery','water'] for a flood-mapping job.",
         "months": "Optional: restrict scenes to specific months. E.g. [6,7,8] for June, July, August only. Leave as [] to include all months in the date range."
     }
 }

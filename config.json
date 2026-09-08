@@ -1,26 +1,28 @@
 {
-    "aoi_shapefile": "D:/Yasser/codes/arcgis-sentinel-2-cog-ag-fields/aoi/ksa_agri_fields.shp",
-    "output_folder": "C:/data/sentinel-2-l2a_10m_mosaics1",
+    "aoi": "D:/Yasser/codes/arcgis-sentinel-2-cog-ag-fields/aoi/ksa_agri_fields.shp",
+    "output_folder": "C:/data/sentinel-2-l2a_10m_mosaics",
     "start_date": "2024-11-01",
     "end_date": "2025-12-30",
     "cloud_cover": 5,
     "area_name": "KSA",
     "mrf_cache_folder": "C:/mrfcache/cachingmrf",
     "name_field": "",
-    "best_scene_only": true,
+    "aoi_buffer_meters": 0,
+    "scene_selection": "best_scene_only",
+    "template_packs": ["all"],
     "months": [],
     "notes": {
-        "aoi_shapefile": "Path to shapefile. If it has multiple features, a separate mosaic will be created for each one.",
+        "aoi": "Shapefile, GeoJSON, feature class, or a 'minx,miny,maxx,maxy' bounding box. Any geometry type; points and lines are buffered automatically. One mosaic per feature.",
         "output_folder": "Folder where GDB and mosaic datasets will be saved.",
         "start_date": "Format: YYYY-MM-DD",
         "end_date": "Format: YYYY-MM-DD",
-        "cloud_cover": "Maximum cloud cover percentage (0-100)",
-        "area_name": "Prefix added to all output mosaic names (e.g. 'KSA' produces KSA_Feature_1, KSA_Field_A). Leave empty for no prefix.",
-        "mrf_cache_folder": "Local folder for MRF tile cache. Must exist and have sufficient disk space.",
-        "name_field": "Optional: field in shapefile to use as mosaic name (e.g. 'FieldName'). Leave empty to use feature index (Feature_1, Feature_2, ...).",
-        "best_scene_only": "If true, keeps only the best scene (lowest cloud cover, most recent tiebreaker) per Sentinel-2 tile. Result is a non-overlapping mosaic of cloudless tiles.",
-        "months": "Optional: list of month numbers to include (e.g. [6,7,8] for June-August only). Leave empty [] to include all months in the date range."
+        "cloud_cover": "Maximum scene cloud cover percentage (0-100), measured over the whole tile.",
+        "area_name": "Prefix added to all output mosaic names. Leave empty for no prefix.",
+        "mrf_cache_folder": "Local folder for MRF tile cache. Must have sufficient disk space.",
+        "name_field": "Optional: AOI field to use as the mosaic name. Leave empty for Feature_1, Feature_2, ...",
+        "aoi_buffer_meters": "Optional: expand each AOI by this many metres before searching.",
+        "scene_selection": "all | best_scene_only | date_coherent. best_scene_only keeps the clearest scene per tile whatever its date. Use date_coherent only when one mosaic must represent a single moment.",
+        "template_packs": "['all'] or any of: imagery, vegetation, water, fire, urban, geology, snow.",
+        "months": "Optional: month numbers to include (e.g. [6,7,8]). Leave [] for all months in the date range."
     }
 }
-
-
