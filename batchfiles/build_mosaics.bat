@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 REM ============================================================
-REM  Sentinel-2 COG Agricultural Fields Mosaic Builder
+REM  COG Mosaic Builder - AOI to mosaic to raster templates
 REM  Double-click to run. No editing required.
 REM ============================================================
 
@@ -11,7 +11,7 @@ set "CONFIG_FILE=%REPO_ROOT%\config.json"
 set "DEFAULT_PYTHON=C:\Program Files\ArcGIS\Pro\bin\Python\envs\arcgispro-py3\python.exe"
 
 echo ============================================================
-echo  Sentinel-2 Mosaic Builder
+echo  COG Mosaic Builder
 echo ============================================================
 echo.
 
@@ -23,7 +23,7 @@ if not exist "%CONFIG_FILE%" (
     echo Expected location: %CONFIG_FILE%
     echo.
     echo Please make sure config.json is in the root of the project folder.
-    echo Open config.json and set your shapefile path, dates, and output folder.
+    echo Open config.json and set your AOI, dates, and output folder.
     echo.
     pause
     exit /b 1
@@ -132,7 +132,7 @@ if errorlevel 1 (
 )
 echo.
 
-REM ********* Step 5: Pre-flight checks (license, shapefile, overwrite warning) **************
+REM ********* Step 5: Pre-flight checks (license, AOI, templates, overwrite warning) **************
 echo [5/6] Running pre-flight checks...
 echo.
 "%pPath%" "%REPO_ROOT%\scripts\preflight_check.py"
@@ -155,9 +155,9 @@ echo.
 
 REM ********* Step 6: Run the workflow **************
 echo [6/6] Running mosaic workflow...
-echo       (This may take several minutes depending on the number of fields)
+echo       (This may take several minutes depending on the number of AOI features)
 echo.
-"%pPath%" "%REPO_ROOT%\scripts\run_from_shapefile.py"
+"%pPath%" "%REPO_ROOT%\scripts\run_workflow.py"
 
 if errorlevel 1 (
     echo.
@@ -166,8 +166,8 @@ if errorlevel 1 (
     echo ============================================================
     echo.
     echo Common causes:
-    echo   - No internet access to reach the Sentinel-2 STAC API
-    echo   - Shapefile has no features in the given date/cloud range
+    echo   - No internet access to reach the STAC API
+    echo   - AOI has no scenes in the given date/cloud range
     echo   - Disk full on the output drive
     echo.
     pause
